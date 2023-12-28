@@ -1,0 +1,27 @@
+---
+- name: Setup and run Docker container
+  hosts: nextjs-server
+  become: yes
+
+  tasks:
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+        update_cache: yes
+
+    - name: Start and enable Docker service
+      systemd:
+        name: docker
+        enabled: yes
+        state: started
+
+    - name: Build and run Docker container
+      docker_container:
+        name: nextjs-app
+        build:
+          path: ../Dockerfile
+        state: started
+        restart_policy: always
+        ports:
+          - "3000:3000"

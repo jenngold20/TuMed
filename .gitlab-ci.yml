@@ -1,0 +1,48 @@
+stages:          # List of stages for jobs, and their order of execution
+  - build-deploy-spring
+  - build-deploy-nextjs
+  - deploy-docker
+
+spring:       # This job runs in the build stage, which runs first.
+  stage: build-deploy-spring
+  tags: ["spring"]
+  script:
+    - set -e # Enable exit on error
+    - cd ./clinicaBack/clinicaBack
+    - sudo chmod +x ./mvnw
+    - echo "compiling the code"
+    - ./mvnw clean package
+    - sudo service clinicaBGack stop
+    - sudo cp ./target/*.jar /home/ubuntu/workspace/
+    - sudo service clinicaBGack start # /etc/init.d/clinicaBGack restart
+    - echo "Application successfully deployed."
+  only:
+    - backend
+nextjs:
+  stage: build-deploy-nextjs
+  tags: ["Next"]
+  script:
+    #- sudo -u ubuntu rm -rf /home/ubuntu/next/clinicaFront/
+    #- cd ./clinicaFront
+    #- sudo -u ubuntu cp -r ./ /home/ubuntu/next/clinicaFront
+    #- sudo -u ubuntu npm install --prefix /home/ubuntu/next/clinicaFront
+    #- sudo -u ubuntu npm run build --prefix /home/ubuntu/next/clinicaFront
+    #- sudo -u ubuntu pm2 delete 0 || echo "process 0 not exists"
+    ##- sudo -u ubuntu pm2 start npm --name "nextjs-app" -- start --cwd /home/ubuntu/next/clinicaFront
+    #- sudo -u ubuntu pm2 start --name "nextjs-app" --cwd "/home/ubuntu/next/clinicaFront" npm -- start
+    #- sudo -u ubuntu pm2 save
+    #- echo "Application successfully deployed."
+  only:
+    - frontend
+docker-deploy:
+  stage: deploy-docker
+  tags: ["docker", "ansible"]
+  before_script:
+    - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'  # Ensure ssh-agent is installed
+    - eval $(ssh-agent -s)
+    - ssh-add </path/to/your/ssh/private/key>
+    - 'which ansible || ( apt-get update -y && apt-get install ansible -y )'  # Ensure Ansible is installed
+  script:
+    - ansible-playbook -i /path/to/inventory /path/to/setup-docker.yml  # Replace with the actual path to your Ansible playbook and inventory file
+  only:
+    - frontend
